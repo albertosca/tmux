@@ -19,9 +19,9 @@ case "$session" in
     tmux set-option -t "$session" pane-active-border-style "fg=colour51,bg=colour236"
     ;;
   personal*)
-    tmux set-option -t "$session" status-bg colour208
-    tmux set-option -t "$session" status-fg colour235
-    tmux set-option -t "$session" pane-active-border-style "fg=colour214,bg=colour235"
+    tmux set-option -t "$session" status-bg colour166
+    tmux set-option -t "$session" status-fg colour255
+    tmux set-option -t "$session" pane-active-border-style "fg=colour172,bg=colour236"
     ;;
   *)
     tmux set-option -u -t "$session" status-bg 2>/dev/null || true
