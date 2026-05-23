@@ -102,8 +102,30 @@ test_undercurl() {
 
 # ── Bindings custom ──────────────────────────────────────────────────────────
 test_modern_splits() {
-  assert_grep "split | (horizontal)" 'bind-key \| split-window -h' "$CONF"
+  assert_grep "split \\ (horizontal)" "bind-key '\\\\' split-window -h" "$CONF"
   assert_grep "split - (vertical)" 'bind-key - split-window -v' "$CONF"
+}
+
+test_swap_window_bindings() {
+  assert_grep "swap-window < (mover janela esq)" 'bind-key.*< swap-window -t -1' "$CONF"
+  assert_grep "swap-window > (mover janela dir)" 'bind-key.*> swap-window -t \+1' "$CONF"
+}
+
+test_session_theme_hooks() {
+  assert_grep "hook session-created → session-theme" 'set-hook.*session-created.*session-theme' "$CONF"
+  assert_grep "hook client-session-changed → session-theme" 'set-hook.*client-session-changed.*session-theme' "$CONF"
+  assert_grep "hook session-renamed → session-theme" 'set-hook.*session-renamed.*session-theme' "$CONF"
+}
+
+test_session_theme_script_exists() {
+  local script="$HOME/.config/tmux/scripts/session-theme.sh"
+  if [[ -f "$script" && -x "$script" ]]; then
+    ok "session-theme.sh existe e é executável"
+  elif [[ -f "$script" ]]; then
+    fail "session-theme.sh existe mas NÃO é executável" "$script"
+  else
+    fail "session-theme.sh não encontrado" "$script"
+  fi
 }
 
 test_popup_bindings() {
@@ -185,7 +207,7 @@ test_new_window_preserves_path() {
 }
 
 test_splits_preserve_path() {
-  assert_grep "split | preserva cwd" 'bind-key \| split-window -h -c "#\{pane_current_path\}"' "$CONF"
+  assert_grep "split \\ preserva cwd" "bind-key '\\\\' split-window -h -c \"#\\{pane_current_path\\}\"" "$CONF"
   assert_grep "split - preserva cwd" 'bind-key - split-window -v -c "#\{pane_current_path\}"' "$CONF"
 }
 
@@ -313,6 +335,9 @@ suite_shell() {
   test_true_color
   test_undercurl
   test_modern_splits
+  test_swap_window_bindings
+  test_session_theme_hooks
+  test_session_theme_script_exists
   test_popup_bindings
   test_reload_binding
   test_clear_screen_fallback

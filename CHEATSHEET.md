@@ -35,6 +35,8 @@ Prefix = **`C-a`** (Ctrl + A).
 | Próxima / anterior | `prefix + n` / `prefix + p` ou `Shift-→` / `Shift-←` |
 | Ir pra janela N | `prefix + N` (1–9) |
 | Fechar janela/pane | `prefix + &` / `prefix + x` |
+| Mover janela ←/→ | `prefix + <` / `prefix + >` (repetível) |
+| Trocar janela N com M | `:swap-window -s N -t M` |
 
 ## Splits
 
@@ -174,6 +176,56 @@ Defaults razoáveis (escape-time, repeat-time, terminal overrides). Roda silenci
 | Limpar a tela (após vim-tmux-nav) | `prefix + C-l` |
 | Ver sessões no modo antigo | `prefix + s` |
 | Copiar output que subiu demais | `prefix + [`, navega, `v`, seleciona, `y` |
+
+---
+
+## Temas por sessão (trabalho / pessoal)
+
+A barra de status e as bordas de pane mudam de cor automaticamente com base no **nome da sessão**:
+
+| Nome começa com | Cor | Caso de uso |
+|-----------------|-----|-------------|
+| `work` | Ciano | Sessões de trabalho |
+| `personal` | Laranja | Sessões pessoais |
+| Qualquer outro | Padrão (preto) | — |
+
+### Como criar uma sessão temática
+
+No shell:
+```bash
+tmux new-session -s work            # ciano
+tmux new-session -s work-myproject    # também ciano — prefixo que importa
+tmux new-session -s personal        # laranja
+tmux new-session -s personal-oss    # também laranja
+```
+
+De dentro do tmux:
+```
+prefix + :  →  new-session -s work-projeto
+```
+
+### Como mudar o tema de uma sessão existente
+
+Renomeie — o hook dispara e aplica a nova cor na hora:
+
+```
+prefix + $   →  digita o novo nome (ex: work-myproject)
+```
+
+Ou pelo shell:
+```bash
+tmux rename-session -t nome-atual work-myproject
+```
+
+### Como funciona
+
+O script `scripts/session-theme.sh` é chamado por três hooks:
+
+- `session-created` — sessão nova recebe cor baseada no nome
+- `client-session-changed` — ao trocar de sessão (`prefix + O`, `prefix + s`, attach), a barra muda
+- `session-renamed` — renomear uma sessão dispara a re-coloração
+
+As cores são definidas **no nível da sessão** (não global), então sessões work e personal podem estar abertas ao mesmo tempo, cada uma com sua cor.
 
 ---
 

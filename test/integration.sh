@@ -137,8 +137,26 @@ assert_key_bound() {
   fi
 }
 
+test_bind_swap_window_left_repeatable() {
+  assert_key_bound "prefix + < (swap-window left, repeatable)" 'bind-key +-r.*-T prefix +<.*swap-window'
+}
+
+test_bind_swap_window_right_repeatable() {
+  assert_key_bound "prefix + > (swap-window right, repeatable)" 'bind-key +-r.*-T prefix +>.*swap-window'
+}
+
+test_hooks_session_theme() {
+  local hooks
+  hooks=$(tx show-hooks -g 2>/dev/null)
+  if echo "$hooks" | grep -q 'session-theme'; then
+    ok "hooks de session-theme registrados"
+  else
+    fail "hooks de session-theme ausentes" "esperado em show-hooks -g"
+  fi
+}
+
 test_bind_split_pipe() {
-  assert_key_bound "prefix + | (split horizontal)" 'bind-key.*-T prefix +\|.*split-window -h'
+  assert_key_bound "prefix + \\ (split horizontal)" 'bind-key.*-T prefix +\\\\.*split-window -h'
 }
 
 test_bind_split_dash() {
@@ -436,7 +454,12 @@ suite_integration() {
   test_var_extrakto_key
   test_var_extrakto_clip
 
+  # Hooks
+  test_hooks_session_theme
+
   # Bindings custom
+  test_bind_swap_window_left_repeatable
+  test_bind_swap_window_right_repeatable
   test_bind_split_pipe
   test_bind_split_dash
   test_bind_reload

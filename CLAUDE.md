@@ -14,6 +14,8 @@ test/
   lib.sh         ← assertion helpers
   shell.sh       ← checagens estáticas no conf
   integration.sh ← testes dinâmicos com tmux rodando em socket isolado
+scripts/
+  session-theme.sh ← aplica cores por sessão (work*=ciano, personal*=laranja)
 plugins/         ← TPM clona plugins aqui (TMUX_PLUGIN_MANAGER_PATH)
 ```
 
@@ -102,7 +104,7 @@ O plugin adiciona `<C-h/j/k/l>` maps no Vim que conversam via `tmux send-keys` c
 - ❌ Não remover `set -g status-keys vi` do **fim** do arquivo — a posição importa (post-TPM override)
 - ❌ Não commitar sem rodar `bash test/run.sh` — a suite pega regressões dos bugs já corrigidos
 - ❌ Não usar splits `v`/`s` — migrados pra `|`/`-`
-- ❌ Não criar bindings que conflitam com: `prefix + c/C/G/T/O/r/h/j/k/l/|/-/H/J/K/L/C-l`
+- ❌ Não criar bindings que conflitam com: `prefix + c/C/G/T/O/r/h/j/k/l/|/-/H/J/K/L/C-l/</>` 
 
 ## Armadilhas conhecidas
 
