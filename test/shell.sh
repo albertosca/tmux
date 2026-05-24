@@ -252,14 +252,24 @@ test_true_color_chain_complete() {
 }
 
 # ── Regressões específicas adicionais ────────────────────────────────────────
-test_bg_default_in_status_format() {
-  # Regressão: antes era `#[bg=]` vazio; agora tem que ser `bg=default`
-  assert_grep "window-status-format usa bg=default" 'window-status-format.*#\[bg=default\]' "$CONF"
+test_window_status_format_no_hardcoded_bg() {
+  # Regressão: antes tinha `bg=black` e `bg=default` hardcoded no formato inativo;
+  # agora o global é neutro (sem bg explícito) para herdar o status-bg da sessão.
+  assert_not_grep "window-status-format não tem bg=black hardcoded" 'window-status-format.*bg=black' "$CONF"
 }
 
-test_brightcyan_in_current_format() {
-  # Regressão: antes era `bgbright=cyan`; agora `bg=brightcyan`
-  assert_grep "window-status-current-format usa bg=brightcyan" 'window-status-current-format.*bg=brightcyan' "$CONF"
+test_current_format_uses_colour51() {
+  # Regressão: antes era `bgbright=cyan` (inválido), depois `bg=brightcyan`;
+  # agora usa colour51 (brightcyan em 256 cores) com black como bg externo correto.
+  assert_grep "window-status-current-format usa colour51" 'window-status-current-format.*colour51' "$CONF"
+}
+
+test_session_theme_has_window_status_formats() {
+  # Garante que session-theme.sh define window-status por tema (não só status-bg/fg)
+  local script
+  script="$(dirname "$CONF")/scripts/session-theme.sh"
+  assert_grep "session-theme define current-format p/ work" 'colour51.*colour31|colour31.*colour51' "$script"
+  assert_grep "session-theme define current-format p/ personal" 'colour172.*colour130|colour130.*colour172' "$script"
 }
 
 # ── Ranges de sanidade numérica ──────────────────────────────────────────────
@@ -358,8 +368,9 @@ suite_shell() {
   test_pbcopy_everywhere
   test_true_color_chain_complete
   # Specific regressions
-  test_bg_default_in_status_format
-  test_brightcyan_in_current_format
+  test_window_status_format_no_hardcoded_bg
+  test_current_format_uses_colour51
+  test_session_theme_has_window_status_formats
   # Sanity ranges
   test_status_interval_in_range
   test_history_limit_in_range
