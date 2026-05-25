@@ -49,6 +49,16 @@ test_no_monitor_activity_on() {
 test_status_left_shows_sessions() {
   # status-left exibe sessões via `tmux ls` (não é mais string vazia)
   assert_grep "status-left exibe sessões (tmux ls)" 'status-left.*tmux ls' "$CONF"
+  # Formato usa ##S e ##{?...} escapados — sem isso o nome duplica (bug de expansão)
+  assert_grep "status-left escapa ##S corretamente" 'status-left.*##S' "$CONF"
+}
+
+test_window_0_mapped_to_10() {
+  assert_grep "prefix+0 → janela 10 (base-index=1)" 'bind-key 0 select-window -t :10' "$CONF"
+}
+
+test_rename_session_no_shift() {
+  assert_grep "prefix+e → rename-session (sem shift)" 'bind-key e command-prompt.*rename-session' "$CONF"
 }
 
 test_no_vs_splits() {
@@ -331,6 +341,8 @@ suite_shell() {
   test_no_screen_256color
   test_no_monitor_activity_on
   test_status_left_shows_sessions
+  test_window_0_mapped_to_10
+  test_rename_session_no_shift
   test_no_vs_splits
   test_prefix_binding
   test_base_index

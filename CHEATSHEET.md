@@ -26,11 +26,15 @@ Prefix = **`C-a`** (Ctrl + A).
 
 | Ação | Atalho |
 |------|--------|
-| Nova sessão | `tmux new -s nome` (shell) |
+| Nova sessão | `tmux new -s nome` (shell) ou `t <nome>` (alias) |
+| Sessão work / personal | `twork` / `tpersonal` — cria ou reanexca |
 | Listar sessões | `prefix + s` (nativo) ou **`prefix + O`** (sessionx, fuzzy) |
+| Todas as janelas de todas as sessões | **`prefix + O`** — abre direto em modo janela (padrão) |
 | Destacar (detach) | `prefix + d` |
 | Reanexar última | `tmux a` (shell) |
+| Renomear **sessão** | **`prefix + e`** (sem shift) ou `prefix + $` — prompt inline |
 | Renomear janela | `prefix + ,` |
+| Ir pra janela 10 | `prefix + 0` |
 | Nova janela | `prefix + c` (abre no cwd atual) |
 | Próxima / anterior | `prefix + n` / `prefix + p` ou `Shift-→` / `Shift-←` |
 | Ir pra janela N | `prefix + N` (1–9) |
@@ -105,19 +109,21 @@ Colar no tmux: `prefix + ]`. No macOS normal: `Cmd+V`.
 
 ---
 
-## Sessionx — fuzzy session switcher 🗂️
+## Sessionx — fuzzy switcher de sessões e janelas 🗂️
 
-`prefix + O` (maiúsculo) → popup com fuzzy-search de sessões + preview.
+**`prefix + O`** (maiúsculo) → popup com **todas as janelas de todas as sessões** listadas (modo padrão).
 
 | Tecla | Ação |
 |-------|------|
-| `Enter` | trocar pra sessão |
-| `C-x` | matar sessão |
-| `C-n` | nova sessão (digita nome) |
-| `C-w` | ver/pular entre windows da sessão |
-| `?` | help completo |
+| `Enter` | ir pra janela / sessão selecionada |
+| `C-t` | alternar pra modo sessão (lista só as sessões) |
+| `C-w` | voltar pra modo janela (todas as janelas de todas as sessões) |
+| `C-r` | renomear a sessão selecionada |
+| `alt-bspace` | matar a sessão selecionada |
+| `C-x` | abrir configurações de path |
+| `?` | toggle do preview |
 
-Com `zoxide` instalado, ele também sugere diretórios recentes — `Enter` num diretório cria sessão lá.
+Com `zoxide` instalado, `C-f` sugere diretórios recentes — `Enter` cria uma sessão nova naquele diretório.
 
 ---
 
@@ -168,13 +174,17 @@ Defaults razoáveis (escape-time, repeat-time, terminal overrides). Roda silenci
 | Quero… | Faço |
 |--------|------|
 | Abrir o Claude rápido | `prefix + C` |
-| Pular de projeto | `prefix + O` |
+| Ver todas as janelas de todas as sessões | **`prefix + O`** |
+| Ir pra uma sessão específica | `prefix + O` → digita o nome |
+| Renomear sessão atual | **`prefix + e`** (sem shift) ou `prefix + $` |
+| Criar / reanexar sessão work | `twork` (shell) |
+| Criar / reanexar sessão personal | `tpersonal` (shell) |
+| Criar / reanexar sessão qualquer | `t <nome>` (shell) |
 | Pegar o path do erro que acabou de passar | `prefix + Tab` |
 | Rodar git commit interativo | `prefix + G` |
 | Abrir shell descartável | `prefix + T` |
 | Recarregar config depois de editar | `prefix + r` |
 | Limpar a tela (após vim-tmux-nav) | `prefix + C-l` |
-| Ver sessões no modo antigo | `prefix + s` |
 | Copiar output que subiu demais | `prefix + [`, navega, `v`, seleciona, `y` |
 
 ---
@@ -191,7 +201,14 @@ A barra de status e as bordas de pane mudam de cor automaticamente com base no *
 
 ### Como criar uma sessão temática
 
-No shell:
+No shell — aliases rápidos:
+```bash
+twork                    # cria ou reanexia sessão 'work' (ciano)
+tpersonal                # cria ou reanexia sessão 'personal' (laranja)
+t work-myproject           # genérico: qualquer nome — cria ou reanexia
+```
+
+Ou explícito:
 ```bash
 tmux new-session -s work            # ciano
 tmux new-session -s work-myproject    # também ciano — prefixo que importa
@@ -209,7 +226,8 @@ prefix + :  →  new-session -s work-projeto
 Renomeie — o hook dispara e aplica a nova cor na hora:
 
 ```
-prefix + $   →  digita o novo nome (ex: work-myproject)
+prefix + e   →  digita o novo nome (ex: work-myproject)   ← sem shift
+prefix + $   →  idem (binding padrão do tmux)
 ```
 
 Ou pelo shell:
