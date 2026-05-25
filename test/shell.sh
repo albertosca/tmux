@@ -46,14 +46,9 @@ test_no_monitor_activity_on() {
   assert_not_grep "sem 'monitor-activity on'" '^[^#]*set.*monitor-activity on' "$CONF"
 }
 
-test_no_duplicate_status_left() {
-  local count
-  count=$(grep -cE "^[^#]*set -g status-left ''" "$CONF" || true)
-  if [[ ${count:-0} -le 1 ]]; then
-    ok "status-left '' não duplicado (count=$count)"
-  else
-    fail "status-left '' duplicado" "apareceu $count vezes"
-  fi
+test_status_left_shows_sessions() {
+  # status-left exibe sessões via `tmux ls` (não é mais string vazia)
+  assert_grep "status-left exibe sessões (tmux ls)" 'status-left.*tmux ls' "$CONF"
 }
 
 test_no_vs_splits() {
@@ -335,7 +330,7 @@ suite_shell() {
   test_no_empty_bg_attr
   test_no_screen_256color
   test_no_monitor_activity_on
-  test_no_duplicate_status_left
+  test_status_left_shows_sessions
   test_no_vs_splits
   test_prefix_binding
   test_base_index

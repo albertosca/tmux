@@ -121,14 +121,14 @@ test_no_duplicate_bindings() {
   fi
 }
 
-test_no_duplicate_set_left() {
-  # Regressão: antes tínhamos set -g status-left '' duas vezes
+test_status_left_defined_once() {
+  # status-left deve aparecer exatamente uma vez (não vazio, não duplicado)
   local count
-  count=$(grep -cE "^[^#]*set -g status-left ''" "$CONF" || true)
-  if [[ ${count:-0} -le 1 ]]; then
-    ok "sem duplicata de 'set -g status-left '' (count=$count)"
+  count=$(grep -cE "^[^#]*set -g status-left '" "$CONF" || true)
+  if [[ ${count:-0} -eq 1 ]]; then
+    ok "status-left definido exatamente uma vez (count=$count)"
   else
-    fail "duplicata de status-left" "aparece $count vezes"
+    fail "status-left count inesperado" "aparece $count vez(es), esperado 1"
   fi
 }
 
@@ -274,7 +274,7 @@ suite_structure() {
   test_tpm_auto_install_block
   # Duplicates
   test_no_duplicate_bindings
-  test_no_duplicate_set_left
+  test_status_left_defined_once
   # File integrity
   test_utf8_valid
   test_no_bom
