@@ -49,8 +49,40 @@ test_no_monitor_activity_on() {
 test_status_left_shows_sessions() {
   # status-left exibe sessões via `tmux ls` (não é mais string vazia)
   assert_grep "status-left exibe sessões (tmux ls)" 'status-left.*tmux ls' "$CONF"
-  # Formato usa ##S e ##{?...} escapados — sem isso o nome duplica (bug de expansão)
+  # Formato usa ##S escapado — sem isso o nome duplica (bug de expansão dentro de #(...))
   assert_grep "status-left escapa ##S corretamente" 'status-left.*##S' "$CONF"
+  # Sessão ativa em negrito
+  assert_grep "status-left: sessão ativa em bold" 'status-left.*bold' "$CONF"
+}
+
+test_status_left_no_strftime_percent_s() {
+  # REGRESSÃO: tmux interpreta %s como strftime (Unix timestamp) dentro de #(...).
+  # O awk usa %%s pra que o tmux converta para %s literal antes de passar ao shell.
+  # Um %s nu apareceria como número incrementando na barra (ex: 1778717521).
+  local line
+  line=$(grep "^set -g status-left " "$CONF")
+  # Não deve haver %s não-escapado (%%s é ok, %s nu não é)
+  if echo "$line" | grep -qE '[^%]%s|^%s'; then
+    fail "status-left contém %s nu (seria substituído por timestamp Unix)" \
+         "use %%s para escapar — tmux converte %%→% antes de passar ao shell"
+  else
+    ok "status-left não tem %s nu (usa %%s para awk printf)"
+  fi
+}
+
+test_status_left_no_comma_in_bold_attr() {
+  # REGRESSÃO: #[fg=colour255,bold] dentro de #{?cond,true,false} quebra o parser
+  # de ternário — a vírgula em ,bold] é interpretada como separador de branches,
+  # truncando o branch true em #[fg=colour255 e jogando bold] no false.
+  # Fix correto: #[fg=colour255]#[bold] (dois blocos separados, sem vírgula).
+  local line
+  line=$(grep "^set -g status-left " "$CONF")
+  if echo "$line" | grep -qE '#\[fg=colour[0-9]+,bold\]'; then
+    fail "status-left usa #[fg=X,bold] dentro de ternário #{?}" \
+         "use #[fg=X]#[bold] para evitar que a vírgula quebre o parser de #{?cond,true,false}"
+  else
+    ok "status-left sem #[fg=X,bold] em ternário (usa #[fg=X]#[bold] corretamente)"
+  fi
 }
 
 test_window_0_mapped_to_10() {
@@ -341,6 +373,8 @@ suite_shell() {
   test_no_screen_256color
   test_no_monitor_activity_on
   test_status_left_shows_sessions
+  test_status_left_no_strftime_percent_s
+  test_status_left_no_comma_in_bold_attr
   test_window_0_mapped_to_10
   test_rename_session_no_shift
   test_no_vs_splits
