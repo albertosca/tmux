@@ -116,3 +116,10 @@ Suite atual: **196 testes passing**. Rode antes de commitar. Para IAs mexendo no
 ## Vim side (vim-tmux-navigator)
 
 Para a navegação `C-h/j/k/l` funcionar dentro do Vim também, instale o plugin correspondente — ver seção **Vim ↔ tmux** no [`CHEATSHEET.md`](CHEATSHEET.md).
+
+---
+
+## Projetos relacionados
+
+- **[albertosca/vim](https://github.com/albertosca/vim)** — minha config do Vim (complementa este setup: navegação tmux↔Vim, plugins, tema)
+- **[albertosca/vim-tutorial](https://github.com/albertosca/vim-tutorial)** — tutorial de Vim que uso como referência
