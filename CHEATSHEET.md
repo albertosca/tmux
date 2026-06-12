@@ -129,19 +129,22 @@ Com `zoxide` instalado, `C-f` sugere diretórios recentes — `Enter` cria uma s
 
 ## Vim ↔ tmux (vim-tmux-navigator)
 
-Instale o plugin no Vim. Você usa **amix/vimrc** com Pathogen, então:
+Instale o plugin `christoomey/vim-tmux-navigator` no Vim com seu gerenciador preferido.
 
+**Pathogen / amix/vimrc:**
 ```bash
-cd ~/.vim_runtime/my_plugins
+cd ~/.vim_runtime/my_plugins   # ou ~/.vim/bundle, depende do seu setup
 git clone https://github.com/christoomey/vim-tmux-navigator.git
+```
+
+**vim-plug:**
+```vim
+Plug 'christoomey/vim-tmux-navigator'
 ```
 
 Depois abra o Vim e rode `:Helptags` (ou reinicie). Pronto.
 
 **Resultado:** `C-h/j/k/l` navega transparentemente entre splits do Vim e panes do tmux. Sem mudança mental, sem prefix.
-
-> Prompt pra colar na outra janela do Claude:
-> *"Instala o plugin christoomey/vim-tmux-navigator no meu setup Vim (amix/vimrc + Pathogen, plugins em ~/.vim_runtime/my_plugins/). Depois me confirma que tá funcionando listando os mappings que ele registra."*
 
 ---
 
@@ -205,7 +208,7 @@ No shell — aliases rápidos:
 ```bash
 twork                    # cria ou reanexia sessão 'work' (ciano)
 tpersonal                # cria ou reanexia sessão 'personal' (laranja)
-t work-myproject           # genérico: qualquer nome — cria ou reanexia
+t work-myproject         # genérico: qualquer nome — cria ou reanexia
 ```
 
 Ou explícito:

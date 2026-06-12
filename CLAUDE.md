@@ -86,12 +86,12 @@ bash test/run.sh integration  # só testes dinâmicos (inicia tmux em socket iso
 
 ### Lado Vim do vim-tmux-navigator
 
-Usuário usa **amix/vimrc + Pathogen**, plugins em `~/.vim_runtime/my_plugins/`. Para instalar:
+O usuário desta config usa **amix/vimrc + Pathogen** (plugins em `~/.vim_runtime/my_plugins/`). Para instalar nesse setup:
 ```bash
 cd ~/.vim_runtime/my_plugins
 git clone https://github.com/christoomey/vim-tmux-navigator.git
 ```
-O plugin adiciona `<C-h/j/k/l>` maps no Vim que conversam via `tmux send-keys` com o pane adjacente quando estão na borda.
+Para outros gerenciadores (vim-plug, lazy.nvim, etc.), adapte o caminho. O plugin adiciona `<C-h/j/k/l>` maps no Vim que conversam via `tmux send-keys` com o pane adjacente quando estão na borda.
 
 ## O que NÃO fazer
 

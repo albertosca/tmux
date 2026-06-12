@@ -183,6 +183,16 @@ test_bind_clear_fallback() {
   assert_key_bound "prefix + C-l (clear fallback)" "bind-key.*-T prefix +C-l.*send-keys"
 }
 
+test_bind_window_0_to_10() {
+  # base-index=1 → tecla 0 fica sem função; mapeamos pra janela 10
+  assert_key_bound "prefix + 0 → select-window :10" 'bind-key.*-T prefix +0.*select-window.*:10'
+}
+
+test_bind_rename_session_e() {
+  # rename-session sem Shift: prefix+e (alternativa ao prefix+$)
+  assert_key_bound "prefix + e → rename-session (sem Shift)" 'bind-key.*-T prefix +e.*rename-session'
+}
+
 # ── Copy-mode bindings ──────────────────────────────────────────────────────
 test_copy_mode_v() {
   if tx list-keys -T copy-mode-vi 2>/dev/null | grep -qE 'bind-key +-T copy-mode-vi +v +send-keys -X begin-selection'; then
@@ -244,6 +254,11 @@ test_opt_status_position() {
 
 test_opt_status_interval() {
   assert_eq "status-interval = 2" "$(gopt status-interval)" "2"
+}
+
+test_opt_status_left_length() {
+  # Era 20; subiu pra 60 pra caber a lista de sessões na status-left
+  assert_eq "status-left-length = 60" "$(gopt status-left-length)" "60"
 }
 
 # ── Remaining plugin vars ────────────────────────────────────────────────────
@@ -467,6 +482,8 @@ suite_integration() {
   test_bind_lazygit_popup
   test_bind_scratch_popup
   test_bind_clear_fallback
+  test_bind_window_0_to_10
+  test_bind_rename_session_e
   test_copy_mode_v
   test_copy_mode_y_pbcopy
   test_copy_mode_rectangle
@@ -483,6 +500,7 @@ suite_integration() {
   test_opt_status_justify
   test_opt_status_position
   test_opt_status_interval
+  test_opt_status_left_length
 
   # Plugin vars (remaining)
   test_var_shell_mode

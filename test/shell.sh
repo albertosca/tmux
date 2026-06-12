@@ -152,6 +152,8 @@ test_session_theme_hooks() {
   assert_grep "hook session-created → session-theme" 'set-hook.*session-created.*session-theme' "$CONF"
   assert_grep "hook client-session-changed → session-theme" 'set-hook.*client-session-changed.*session-theme' "$CONF"
   assert_grep "hook session-renamed → session-theme" 'set-hook.*session-renamed.*session-theme' "$CONF"
+  assert_grep "hook after-new-window → session-theme (cobre janelas criadas depois do hook inicial)" 'set-hook.*after-new-window.*session-theme' "$CONF"
+  assert_grep "hook after-split-window → session-theme (evita flash de cor global ao criar pane)" 'set-hook.*after-split-window.*session-theme' "$CONF"
 }
 
 test_session_theme_script_exists() {
@@ -289,16 +291,22 @@ test_true_color_chain_complete() {
 }
 
 # ── Regressões específicas adicionais ────────────────────────────────────────
+test_status_left_length_60() {
+  # status-left-length era 20 (original); precisou subir pra 60 pra caber a lista de sessões
+  assert_grep "status-left-length 60" 'set -g status-left-length 60' "$CONF"
+}
+
 test_window_status_format_no_hardcoded_bg() {
   # Regressão: antes tinha `bg=black` e `bg=default` hardcoded no formato inativo;
   # agora o global é neutro (sem bg explícito) para herdar o status-bg da sessão.
   assert_not_grep "window-status-format não tem bg=black hardcoded" 'window-status-format.*bg=black' "$CONF"
 }
 
-test_current_format_uses_colour51() {
-  # Regressão: antes era `bgbright=cyan` (inválido), depois `bg=brightcyan`;
-  # agora usa colour51 (brightcyan em 256 cores) com black como bg externo correto.
-  assert_grep "window-status-current-format usa colour51" 'window-status-current-format.*colour51' "$CONF"
+test_current_format_global_is_neutral() {
+  # Global usa colour244 (cinza neutro) para não vazar cor de work (colour51/ciano)
+  # no flash entre criar janela e o hook after-new-window aplicar o tema da sessão.
+  assert_grep "window-status-current-format global usa colour244 (neutro)" 'window-status-current-format.*colour244' "$CONF"
+  assert_not_grep "window-status-current-format global não usa colour51 (ciano/work)" 'window-status-current-format.*colour51' "$CONF"
 }
 
 test_session_theme_has_window_status_formats() {
@@ -307,6 +315,15 @@ test_session_theme_has_window_status_formats() {
   script="$(dirname "$CONF")/scripts/session-theme.sh"
   assert_grep "session-theme define current-format p/ work" 'colour51.*colour31|colour31.*colour51' "$script"
   assert_grep "session-theme define current-format p/ personal" 'colour172.*colour130|colour130.*colour172' "$script"
+}
+
+test_session_theme_reset_default_case() {
+  # Regressão: o case *) deve chamar reset_window_formats pra limpar formatos
+  # de sessões renomeadas (ex: work→foo deixaria cores de work sem o reset).
+  local script
+  script="$(dirname "$CONF")/scripts/session-theme.sh"
+  assert_grep "session-theme reset_window_formats definida" 'reset_window_formats\(\)' "$script"
+  assert_grep "session-theme case *) chama reset_window_formats" 'reset_window_formats' "$script"
 }
 
 # ── Ranges de sanidade numérica ──────────────────────────────────────────────
@@ -375,6 +392,7 @@ suite_shell() {
   test_status_left_shows_sessions
   test_status_left_no_strftime_percent_s
   test_status_left_no_comma_in_bold_attr
+  test_status_left_length_60
   test_window_0_mapped_to_10
   test_rename_session_no_shift
   test_no_vs_splits
@@ -410,8 +428,9 @@ suite_shell() {
   test_true_color_chain_complete
   # Specific regressions
   test_window_status_format_no_hardcoded_bg
-  test_current_format_uses_colour51
+  test_current_format_global_is_neutral
   test_session_theme_has_window_status_formats
+  test_session_theme_reset_default_case
   # Sanity ranges
   test_status_interval_in_range
   test_history_limit_in_range

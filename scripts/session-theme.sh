@@ -14,9 +14,6 @@ fi
 
 apply_window_formats() {
   local target="$1" current_fmt="$2" inactive_fmt="$3"
-  # Aplica no escopo da sessão (janelas novas herdam)
-  tmux set-option -wt "${target}:" window-status-current-format "$current_fmt" 2>/dev/null || true
-  tmux set-option -wt "${target}:" window-status-format         "$inactive_fmt" 2>/dev/null || true
   # Aplica em todas as janelas existentes (sem isso janelas abertas não atualizam)
   tmux list-windows -t "$target" -F '#{window_index}' 2>/dev/null | while IFS= read -r idx; do
     tmux set-window-option -t "${target}:${idx}" window-status-current-format "$current_fmt"
@@ -40,7 +37,7 @@ case "$session" in
     tmux set-option -t "$session" status-fg colour255
     tmux set-option -t "$session" pane-active-border-style "fg=colour51,bg=colour236"
     apply_window_formats "$session" \
-      "#[fg=colour51,bg=colour51]⮀#[fg=colour255,bg=colour51,bold] #I ⮁ #W #[fg=colour51,bg=colour31]⮀" \
+      "#[fg=colour31,bg=colour51]⮀#[fg=colour255,bg=colour51,bold] #I ⮁ #W #[fg=colour51,bg=colour31]⮀" \
       "#[fg=colour255,bg=colour31] #I  #W "
     ;;
   personal*)
