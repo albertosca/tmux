@@ -6,8 +6,9 @@
 # every run and would demand a force push. Copying into a fresh clone keeps
 # the public history linear and append-only.
 #
-# The private dotfiles monorepo can never become the public remote — its git
-# history carries personal data. Only the file set below is ever published.
+# The private dotfiles monorepo is never the public remote. Only the file set
+# below is ever published — an allowlist, never a denylist, so a file added to
+# the repo stays private until someone deliberately lists it.
 #
 # Usage:
 #   bash scripts/sync-public.sh              # sync if drifted

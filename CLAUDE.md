@@ -123,7 +123,7 @@ Para outros gerenciadores (vim-plug, lazy.nvim, etc.), adapte o caminho. O plugi
 
 ## Espelho público — SINCRONIZAR SEMPRE
 
-Esta config vive em dois lugares: aqui (dentro do monorepo **privado** `~/.dotfiles`, que tem dado pessoal no histórico e nunca pode virar público) e no espelho público `github.com/albertosca/tmux`, que é um repositório separado com histórico reescrito por `git filter-repo`.
+Esta config vive em dois lugares: aqui (dentro do monorepo **privado** `~/.dotfiles`, que não é publicável) e no espelho público `github.com/albertosca/tmux`, que é um repositório separado com histórico reescrito por `git filter-repo`.
 
 **Toda mudança em qualquer arquivo publicável tem que ser sincronizada:**
 
