@@ -11,7 +11,7 @@
 set -u
 
 TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$TEST_DIR"
+cd "$TEST_DIR" || exit 1
 
 # ── Args ─────────────────────────────────────────────────────────────────────
 SUITE="all"
@@ -159,4 +159,4 @@ else
 fi
 printf "\n"
 
-exit $([[ $TOTAL_FAIL -eq 0 ]] && echo 0 || echo 1)
+exit "$([[ $TOTAL_FAIL -eq 0 ]] && echo 0 || echo 1)"

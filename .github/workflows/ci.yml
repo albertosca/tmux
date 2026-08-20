@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    # Apple Silicon runner: the suite measures that panes run natively
+    # (sysctl.proc_translated) and spawns its test server through `arch -arm64`.
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tmux
+        run: brew install tmux
+
+      - name: Put the config on the XDG path
+        # The suites read $HOME/.config/tmux/tmux.conf, which is exactly how
+        # tmux itself finds it — testing the checkout in place would test a
+        # path no real install uses.
+        run: |
+          mkdir -p "$HOME/.config"
+          ln -s "$GITHUB_WORKSPACE" "$HOME/.config/tmux"
+
+      - name: Install TPM and plugins
+        # Without this the plugin-health tests skip instead of running, and
+        # the conf's own bootstrap would race the integration suite.
+        run: |
+          git clone --depth 1 https://github.com/tmux-plugins/tpm \
+            "$HOME/.config/tmux/plugins/tpm"
+          "$HOME/.config/tmux/plugins/tpm/bin/install_plugins"
+
+      - name: Run the test suite
+        run: bash test/run.sh -v

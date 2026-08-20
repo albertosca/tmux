@@ -36,6 +36,65 @@ test_config_loads() {
   fi
 }
 
+test_tmux_native_arch() {
+  local tmux_bin
+  tmux_bin=$(command -v tmux)
+  if file "$tmux_bin" | grep -q "arm64"; then
+    ok "tmux binário tem slice arm64 nativa ($tmux_bin)"
+  else
+    fail "tmux binário sem slice arm64" "$(file "$tmux_bin")"
+  fi
+}
+
+# O binário ser arm64 não garante pane nativo: default-command pode envelopar
+# o shell num wrapper Intel (reattach-to-user-namespace) e todo o pane herda
+# Rosetta. Este teste mede dentro de um pane real, spawnado sem comando
+# explícito — o mesmo caminho (default-command) que um pane de verdade usa.
+#
+# Servidor próprio criado via arch -arm64: o macOS herda a preferência de
+# slice x86_64 pela linhagem inteira de processos (mesmo através de um
+# binário arm64-only no meio), então um caller da suite rodando sob Rosetta
+# contaminaria o resultado. arch -arm64 normaliza só a preferência — um
+# wrapper x86_64-only na cadeia ainda força tradução e reprova o teste.
+test_pane_native_arch() {
+  local out socket translated
+  out=$(mktemp -t tmux-test-arch.XXXXXX)
+  socket="claude-test-arch-$$"
+  if ! arch -arm64 tmux -L "$socket" -f "$CONF" new-session -d -s archcheck 2>/dev/null; then
+    fail "pane nativo: servidor de teste não subiu via arch -arm64"
+    rm -f "$out"
+    return
+  fi
+  sleep 1
+  tmux -L "$socket" send-keys -t archcheck "sysctl -n sysctl.proc_translated > '$out'; echo done >> '$out'" Enter
+
+  # 150 × 0.1s = 15s. O shell do pane carrega o .zshrc inteiro antes de rodar
+  # o comando; com a máquina sob carga (suites em paralelo) os 5s originais
+  # estouravam e a medição saía vazia.
+  local i=0
+  while [[ $i -lt 150 ]] && ! grep -q "done" "$out" 2>/dev/null; do
+    sleep 0.1
+    i=$((i + 1))
+  done
+  local measured=0
+  grep -q "done" "$out" 2>/dev/null && measured=1
+  translated=$(head -1 "$out" 2>/dev/null)
+  tmux -L "$socket" kill-server 2>/dev/null
+  rm -f "$out" "${TMUX_TMPDIR:-/tmp/tmux-$(id -u)}/$socket"
+
+  # "não consegui medir" é um resultado terceiro, nunca Rosetta: o timeout
+  # devolvia string vazia e o else pintava de vermelho com a mensagem errada,
+  # mandando procurar Rosetta onde o defeito era o relógio do teste.
+  if [[ "$measured" -eq 0 ]]; then
+    fail "pane nativo: medição não completou em 15s" \
+      "timeout esperando o comando rodar no pane — resultado indeterminado, NÃO é Rosetta"
+  elif [[ "$translated" == "0" ]]; then
+    ok "pane roda nativo (proc_translated = 0)"
+  else
+    fail "pane roda sob Rosetta" "proc_translated = '$translated' (esperado 0)"
+  fi
+}
+
 # As funções abaixo assumem que test_config_loads já rodou com sucesso
 gopt() { tx show-options -gv "$1" 2>/dev/null; }
 wopt() { tx show-window-options -gv "$1" 2>/dev/null; }
@@ -191,6 +250,12 @@ test_bind_window_0_to_10() {
 test_bind_rename_session_e() {
   # rename-session sem Shift: prefix+e (alternativa ao prefix+$)
   assert_key_bound "prefix + e → rename-session (sem Shift)" 'bind-key.*-T prefix +e.*rename-session'
+}
+
+test_bind_pending_mark() {
+  # prefix+m → marca manual de pendência; o comando é guarded (test -f)
+  # então o binding existe mesmo em máquina sem o hook do Claude
+  assert_key_bound "prefix + m → pending mark (guarded)" 'bind-key.*-T prefix +m .*run-shell.*tmux-pending'
 }
 
 # ── Copy-mode bindings ──────────────────────────────────────────────────────
@@ -446,6 +511,9 @@ suite_integration() {
     return 1
   fi
 
+  test_tmux_native_arch
+  test_pane_native_arch
+
   # Options globais
   test_opt_prefix
   test_opt_base_index
@@ -484,6 +552,7 @@ suite_integration() {
   test_bind_clear_fallback
   test_bind_window_0_to_10
   test_bind_rename_session_e
+  test_bind_pending_mark
   test_copy_mode_v
   test_copy_mode_y_pbcopy
   test_copy_mode_rectangle

@@ -182,6 +182,23 @@ test_clear_screen_fallback() {
   assert_grep "clear fallback (prefix+C-l)" "bind C-l send-keys 'C-l'" "$CONF"
 }
 
+test_default_command_guarded() {
+  # Um path absoluto sem guard mata TODO pane com exit 127 em qualquer host
+  # sem aquele binário — medido: o servidor inteiro não sobrevive ao boot
+  assert_grep "default-command atrás de if-shell" \
+    "if-shell '\[ -x /opt/homebrew/bin/reattach-to-user-namespace \]'" "$CONF"
+  assert_not_grep "sem set -g default-command solto (não-guarded)" \
+    '^set -g default-command' "$CONF"
+}
+
+test_pending_mark_guarded() {
+  # prefix+m chama um hook externo (~/.claude/hooks/tmux-pending.sh) que só
+  # existe na máquina do dono — o guard test -f mantém o binding inofensivo
+  # em qualquer clone do repo público
+  assert_grep "pending mark (prefix+m)" 'bind-key m run-shell.*tmux-pending.sh mark' "$CONF"
+  assert_grep "pending mark tem guard test -f" 'bind-key m run-shell "test -f.*tmux-pending.sh &&' "$CONF"
+}
+
 test_copy_mode_vi_bindings() {
   assert_grep "copy-mode v (seleção)" "copy-mode-vi v send -X begin-selection" "$CONF"
   assert_grep "copy-mode C-v (block)" "copy-mode-vi C-v send -X rectangle-toggle" "$CONF"
@@ -410,6 +427,8 @@ suite_shell() {
   test_popup_bindings
   test_reload_binding
   test_clear_screen_fallback
+  test_default_command_guarded
+  test_pending_mark_guarded
   test_copy_mode_vi_bindings
   test_git_in_status
   test_plugins_listed

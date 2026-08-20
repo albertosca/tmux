@@ -186,10 +186,87 @@ test_line_count_reasonable() {
 # ── Ambiente externo ─────────────────────────────────────────────────────────
 test_no_legacy_tmux_conf() {
   # ~/.tmux.conf sombreia o XDG path em alguns tmux
+  # shellcheck disable=SC2088  # o til aqui é texto de mensagem, não path
   if [[ -e "$HOME/.tmux.conf" ]]; then
     fail "~/.tmux.conf existe" "pode sombrear ~/.config/tmux/tmux.conf"
   else
     ok "~/.tmux.conf ausente (XDG path ativo sem conflito)"
+  fi
+}
+
+# ── Sync com o espelho público ───────────────────────────────────────────────
+# O PUBLISHED de sync-public.sh é um allowlist: arquivo fora dele nunca chega
+# no repo público, e o sync ainda assim diz "sincronizado". O modo de falha é
+# silencioso nas duas direções — arquivo novo que não é publicado, e arquivo
+# privado que passaria a ser — então a lista é conferida contra o disco.
+SYNC_SCRIPT="$HOME/.config/tmux/scripts/sync-public.sh"
+
+# Entradas que existem no checkout e deliberadamente NÃO são publicadas.
+NEVER_PUBLISHED=(.git .claude plugins .public-sync TODO.md)
+
+test_sync_script_exists() {
+  if [[ -f "$SYNC_SCRIPT" ]]; then
+    ok "scripts/sync-public.sh existe"
+  else
+    fail "scripts/sync-public.sh ausente" "sem ele o espelho público só drifta"
+  fi
+}
+
+test_sync_published_list_covers_repo() {
+  [[ -f "$SYNC_SCRIPT" ]] || { skip "sync-public.sh ausente"; return; }
+
+  local published
+  published=$(sed -n '/^PUBLISHED=(/,/^)/p' "$SYNC_SCRIPT" | sed '1d;$d' | tr -d ' ')
+  if [[ -z "$published" ]]; then
+    fail "PUBLISHED não encontrado em sync-public.sh" "regex de extração quebrou"
+    return
+  fi
+
+  local missing=() entry name
+  for entry in "$HOME"/.config/tmux/* "$HOME"/.config/tmux/.[!.]*; do
+    [[ -e "$entry" ]] || continue
+    name=$(basename "$entry")
+    local skip_it=0 n
+    for n in "${NEVER_PUBLISHED[@]}"; do
+      [[ "$name" == "$n" ]] && { skip_it=1; break; }
+    done
+    [[ $skip_it -eq 1 ]] && continue
+    printf '%s\n' "$published" | grep -qxF "$name" || missing+=("$name")
+  done
+
+  if [[ ${#missing[@]} -eq 0 ]]; then
+    ok "PUBLISHED cobre todo o checkout publicável"
+  else
+    fail "arquivos fora do PUBLISHED (nunca chegam no repo público)" "${missing[*]}"
+  fi
+}
+
+test_sync_never_publishes_private() {
+  [[ -f "$SYNC_SCRIPT" ]] || { skip "sync-public.sh ausente"; return; }
+
+  local published leaked=() n
+  published=$(sed -n '/^PUBLISHED=(/,/^)/p' "$SYNC_SCRIPT" | sed '1d;$d' | tr -d ' ')
+  for n in "${NEVER_PUBLISHED[@]}"; do
+    printf '%s\n' "$published" | grep -qxF "$n" && leaked+=("$n")
+  done
+
+  if [[ ${#leaked[@]} -eq 0 ]]; then
+    ok "nenhuma entrada privada no PUBLISHED"
+  else
+    fail "entrada privada listada pra publicação" "${leaked[*]}"
+  fi
+}
+
+test_sync_nudge_hook_registered() {
+  local settings="$HOME/.dotfiles/config/claude/settings.json"
+  if [[ ! -f "$settings" ]]; then
+    skip "settings.json do Claude ausente (máquina sem os dotfiles)"
+    return
+  fi
+  if grep -q "tmux-public-sync-nudge.py" "$settings"; then
+    ok "hook de nudge registrado no SessionStart"
+  else
+    fail "hook de nudge não registrado" "o drift volta a ser silencioso"
   fi
 }
 
@@ -283,6 +360,11 @@ suite_structure() {
   test_line_count_reasonable
   # External
   test_no_legacy_tmux_conf
+
+  test_sync_script_exists
+  test_sync_published_list_covers_repo
+  test_sync_never_publishes_private
+  test_sync_nudge_hook_registered
   # Plugin health
   test_plugin_dirs_valid_git_repos
   test_plugin_dirs_have_entry_file

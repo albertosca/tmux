@@ -121,13 +121,43 @@ Para outros gerenciadores (vim-plug, lazy.nvim, etc.), adapte o caminho. O plugi
 - **Adicionar plugin:** entre o último `@plugin` e a linha de `run`, + `@vars` de config logo abaixo
 - **Override de plugin default:** depois da linha `run '...'` do TPM
 
+## Espelho público — SINCRONIZAR SEMPRE
+
+Esta config vive em dois lugares: aqui (dentro do monorepo **privado** `~/.dotfiles`, que tem dado pessoal no histórico e nunca pode virar público) e no espelho público `github.com/albertosca/tmux`, que é um repositório separado com histórico reescrito por `git filter-repo`.
+
+**Toda mudança em qualquer arquivo publicável tem que ser sincronizada:**
+
+```bash
+bash scripts/sync-public.sh            # roda a suite + shellcheck e publica
+bash scripts/sync-public.sh --check    # só reporta drift (exit 1 = drifted)
+```
+
+- O script **recusa publicar no vermelho** — suite ou shellcheck falhando aborta antes do push.
+- `PUBLISHED` no topo do script é um **allowlist**: arquivo que não está lá nunca chega no público. É a fronteira de privacidade — três testes em `structure.sh` conferem que a lista cobre o checkout e que nada privado entrou nela.
+- `.public-sync` guarda o fingerprint do último estado publicado. Um hook `SessionStart` (`tmux-public-sync-nudge.py`) compara e avisa quando drifta — sem bloquear, e sem rede.
+- **Nunca** use `git subtree push`: o `filter-repo` inicial faz ele recriar SHAs a cada run e exigir force push.
+- Publicar é ação voltada pra fora — **confirme com o Alberto antes do push**.
+
+**Por que isso existe:** entre junho e 20/08/2026 três commits ficaram só no privado e ninguém percebeu, porque o passo manual não tinha nada apontando pra ele.
+
+## Nada de path absoluto sem guard
+
+O conf é publicado como está e clonado por outras pessoas. Um caminho absoluto que não existe na máquina do outro **mata todo pane com exit 127** — medido: sem o guard, o servidor tmux inteiro não sobrevive ao boot. Todo alcance pra fora do repo fica atrás de uma checagem de existência:
+
+- `default-command` → `if-shell '[ -x /opt/homebrew/bin/reattach-to-user-namespace ]'`
+- `prefix + m` → `test -f ~/.claude/hooks/tmux-pending.sh && ... || true`
+
+Ao adicionar qualquer binding que chame binário ou script de fora, guarde do mesmo jeito e escreva o teste correspondente em `shell.sh`.
+
 ## Commits / handoff entre IAs
 
 Se você é uma IA lendo isso pra mexer no conf:
 1. Rode `bash test/run.sh` ANTES de mudar qualquer coisa (baseline verde)
 2. Faça mudança
 3. Rode `bash test/run.sh` de novo — deve continuar verde
-4. Se uma regressão foi pega, corrija antes de declarar feito
-5. Se uma mudança legítima quebra um teste (ex: renomeou binding), atualize o teste correspondente
+4. Rode `shellcheck -S warning scripts/*.sh test/*.sh` — o CI reprova warning
+5. Se uma regressão foi pega, corrija antes de declarar feito
+6. Se uma mudança legítima quebra um teste (ex: renomeou binding), atualize o teste correspondente
+7. **Sincronize o espelho público** (seção acima) — commit no dotfiles não publica nada sozinho
 
 O CHEATSHEET.md é para o **usuário** operar o tmux. Este CLAUDE.md é para **você** não quebrar nada.
