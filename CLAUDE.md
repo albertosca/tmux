@@ -140,6 +140,12 @@ bash scripts/sync-public.sh --check    # só reporta drift (exit 1 = drifted)
 
 **Por que isso existe:** entre junho e 20/08/2026 três commits ficaram só no privado e ninguém percebeu, porque o passo manual não tinha nada apontando pra ele.
 
+### Remover num commit seguinte NÃO tira do repo público
+
+Publicado é publicado. Apagar uma linha e commitar por cima deixa o conteúdo **acessível pra sempre** no commit pai — `git show <commit>^:arquivo` devolve ele inteiro. Auditado em 20/08/2026: duas "remoções" deste repo são cosméticas (o prompt pessoal tirado em junho e uma frase minha tirada no mesmo dia da auditoria); as duas seguem públicas. Nos dois casos o conteúdo é inofensivo, então ficou como está.
+
+A consequência prática é para o futuro: **decida antes de publicar, não depois.** Se algo sensível de verdade escapar, o commit de remoção não resolve — só reescrita de histórico (`git filter-repo`) mais force push resolve, e isso exige decisão do Alberto.
+
 ## Nada de path absoluto sem guard
 
 O conf é publicado como está e clonado por outras pessoas. Um caminho absoluto que não existe na máquina do outro **mata todo pane com exit 127** — medido: sem o guard, o servidor tmux inteiro não sobrevive ao boot. Todo alcance pra fora do repo fica atrás de uma checagem de existência:
