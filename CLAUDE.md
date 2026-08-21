@@ -6,16 +6,22 @@ Config do tmux em `~/.config/tmux/` (path XDG, tmux 3.1+ encontra automaticament
 
 ```
 tmux.conf        ← config principal
-README.md        ← overview + lista de plugins
+README.md        ← overview + lista de plugins (inglês)
+README.pt.md     ← versão PT-BR; bandeirinhas no topo dos dois
 CHEATSHEET.md    ← docs operacionais (atalhos, popups, fluxos)
 CLAUDE.md        ← este arquivo
+.github/workflows/ ← ci.yml (testes, macos-latest) + lint.yml (shellcheck)
+.public-sync     ← fingerprint do último estado publicado (não vai pro repo público)
 test/
   run.sh         ← entry point dos testes (bash test/run.sh)
   lib.sh         ← assertion helpers
   shell.sh       ← checagens estáticas no conf
   integration.sh ← testes dinâmicos com tmux rodando em socket isolado
+  structure.sh   ← line-order, duplicatas, encoding, plugin health, allowlist do sync
+  meta.sh        ← self-tests do harness
 scripts/
   session-theme.sh ← aplica cores por sessão (work*=ciano, personal*=laranja)
+  sync-public.sh   ← publica no espelho público (allowlist; recusa publicar no vermelho)
 plugins/         ← TPM clona plugins aqui (TMUX_PLUGIN_MANAGER_PATH)
 ```
 
@@ -104,7 +110,7 @@ Para outros gerenciadores (vim-plug, lazy.nvim, etc.), adapte o caminho. O plugi
 - ❌ Não remover `set -g status-keys vi` do **fim** do arquivo — a posição importa (post-TPM override)
 - ❌ Não commitar sem rodar `bash test/run.sh` — a suite pega regressões dos bugs já corrigidos
 - ❌ Não usar splits `v`/`s` — migrados pra `|`/`-`
-- ❌ Não criar bindings que conflitam com: `prefix + c/C/G/T/O/r/h/j/k/l/|/-/H/J/K/L/C-l/</>` 
+- ❌ Não criar bindings que conflitam com: `prefix + c/C/e/G/m/r/T/O/0/h/j/k/l/|/-/H/J/K/L/C-l/</>` 
 
 ## Armadilhas conhecidas
 
