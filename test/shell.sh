@@ -152,7 +152,12 @@ test_session_theme_hooks() {
   assert_grep "hook session-created → session-theme" 'set-hook.*session-created.*session-theme' "$CONF"
   assert_grep "hook client-session-changed → session-theme" 'set-hook.*client-session-changed.*session-theme' "$CONF"
   assert_grep "hook session-renamed → session-theme" 'set-hook.*session-renamed.*session-theme' "$CONF"
-  assert_grep "hook after-new-window → session-theme (cobre janelas criadas depois do hook inicial)" 'set-hook.*after-new-window.*session-theme' "$CONF"
+  # after-new-window saiu em 26/08/2026 e a ausência dele é a asserção agora:
+  # os window-status-formats viraram globais DINÂMICOS (resolvem a cor por #S
+  # no render), então janela nova já nasce com o tema certo sem ninguém
+  # reaplicar. Um hook reaplicando formato por-window é justamente o que
+  # colidia com o indicador de pendência, que também escreve nesse escopo.
+  assert_not_grep "sem hook after-new-window (formato global dinâmico dispensa reaplicar)" 'set-hook.*after-new-window.*session-theme' "$CONF"
   assert_grep "hook after-split-window → session-theme (evita flash de cor global ao criar pane)" 'set-hook.*after-split-window.*session-theme' "$CONF"
 }
 
@@ -320,27 +325,39 @@ test_window_status_format_no_hardcoded_bg() {
 }
 
 test_current_format_global_is_neutral() {
-  # Global usa colour244 (cinza neutro) para não vazar cor de work (colour51/ciano)
-  # no flash entre criar janela e o hook after-new-window aplicar o tema da sessão.
-  assert_grep "window-status-current-format global usa colour244 (neutro)" 'window-status-current-format.*colour244' "$CONF"
-  assert_not_grep "window-status-current-format global não usa colour51 (ciano/work)" 'window-status-current-format.*colour51' "$CONF"
+  # A intenção original continua: nenhuma cor de sessão pode VAZAR para outra
+  # sessão. O mecanismo mudou — antes o global era neutro (colour244) e o
+  # tema pintava por window; agora o global carrega as três paletas atrás de
+  # condicionais de formato resolvidas por #S no render, o que elimina o
+  # flash entre criar a janela e o hook rodar (não há mais hook).
+  assert_grep "window-status-current-format global mantém o neutro (colour244)" 'window-status-current-format.*colour244' "$CONF"
+  assert_grep "window-status-current-format global é condicional por sessão" 'window-status-current-format.*m:work\*' "$CONF"
+  assert_grep "window-status-format global também é condicional por sessão" 'window-status-format.*m:personal\*' "$CONF"
 }
 
 test_session_theme_has_window_status_formats() {
-  # Garante que session-theme.sh define window-status por tema (não só status-bg/fg)
-  local script
-  script="$(dirname "$CONF")/scripts/session-theme.sh"
-  assert_grep "session-theme define current-format p/ work" 'colour51.*colour31|colour31.*colour51' "$script"
-  assert_grep "session-theme define current-format p/ personal" 'colour172.*colour130|colour130.*colour172' "$script"
+  # As duas paletas continuam definidas — só mudaram de arquivo, do
+  # session-theme.sh para o global do conf, quando a pintura por-window
+  # passou a ser exclusividade do indicador de pendência (26/08/2026).
+  assert_grep "paleta de work (ciano) no current-format global" 'window-status-current-format.*colour51.*colour31|window-status-current-format.*colour31.*colour51' "$CONF"
+  assert_grep "paleta de personal (laranja) no current-format global" 'window-status-current-format.*colour172.*colour130|window-status-current-format.*colour130.*colour172' "$CONF"
 }
 
 test_session_theme_reset_default_case() {
-  # Regressão: o case *) deve chamar reset_window_formats pra limpar formatos
-  # de sessões renomeadas (ex: work→foo deixaria cores de work sem o reset).
+  # A regressão original (renomear work→foo deixava cores de work grudadas)
+  # deixou de ser possível por construção: o formato global resolve a cor
+  # por #S a cada render, então renomear a sessão troca a cor sozinho, sem
+  # nada pra "resetar". A asserção agora é a inversa e mais forte —
+  # session-theme.sh NÃO pode escrever formato de window, porque esse escopo
+  # é do indicador de pendência e dois donos ali se atropelam (foi o bug das
+  # "windows cinzas" em 25/08/2026).
   local script
   script="$(dirname "$CONF")/scripts/session-theme.sh"
-  assert_grep "session-theme reset_window_formats definida" 'reset_window_formats\(\)' "$script"
-  assert_grep "session-theme case *) chama reset_window_formats" 'reset_window_formats' "$script"
+  # ^[^#]* ancora fora de comentário: a primeira versão desta asserção casava
+  # com a própria linha de comentário que EXPLICA a mudança, medindo texto em
+  # vez de comportamento.
+  assert_not_grep "session-theme não escreve window-status (escopo do indicador)" '^[^#]*tmux.*window-status' "$script"
+  assert_grep "session-theme segue cuidando das opções de SESSÃO" 'status-bg' "$script"
 }
 
 # ── Ranges de sanidade numérica ──────────────────────────────────────────────

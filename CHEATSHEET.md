@@ -81,6 +81,28 @@ Todos abrem no `$PWD` do pane atual.
 
 ---
 
+## Indicador de pendência 🎨
+
+A aba da janela na barra muda de cor sozinha quando um Claude Code está te esperando naquela janela — e você pode marcar uma aba à mão pra voltar nela depois.
+
+| Cor da aba | Significado |
+|------------|-------------|
+| Normal | nada pendente |
+| **Violeta** | um Claude terminou ou fez uma pergunta e está esperando você |
+| **Verde** | você marcou essa aba com `prefix + m` ("volto aqui depois") |
+
+| Ação | Atalho |
+|------|--------|
+| Marcar/desmarcar a janela atual | **`prefix + m`** |
+
+A marca manual **sobrepõe** a cor de pendência: se você marca uma aba violeta, ela fica verde e volta a ficar violeta quando você desmarcar (se o Claude ainda estiver esperando). O violeta só sai quando você de fato responder — trocar de aba e olhar não conta.
+
+A aba **selecionada** aparece num tom mais claro, com negrito, em qualquer uma das cores.
+
+> Requer os hooks do Claude Code em `~/.claude/hooks/tmux-pending.sh`. Sem eles, o `prefix + m` não faz nada (o binding é guardado por `test -f`) e o resto do conf funciona normalmente.
+
+---
+
 ## Copy-mode (selecionar e copiar texto)
 
 1. Entrar em copy-mode: `prefix + [`

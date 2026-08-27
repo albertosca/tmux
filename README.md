@@ -107,6 +107,24 @@ The status bar and the pane borders change color based on the session name:
 
 ---
 
+## Pending indicator
+
+A window's tab changes colour on its own while a Claude Code session in that window is waiting on you, and you can mark a tab by hand to come back to it later.
+
+| Tab colour | Meaning |
+|------------|---------|
+| Normal | nothing pending |
+| **Violet** | a Claude finished, or asked something, and is waiting for you |
+| **Green** | you marked this tab with `prefix + m` |
+
+A manual mark takes precedence over a pending one and never erases it: marking a violet tab turns it green, and unmarking brings the violet back if that Claude is still waiting. Pending clears only when you actually reply — switching to the tab and reading does not count. The selected tab is shown in a lighter shade of whichever colour applies, in bold.
+
+Adjacent coloured tabs are joined powerline-style: the wedge between two of them carries the previous tab's colour, and a run of same-coloured tabs is divided by a thin soft separator instead of an invisible same-on-same one.
+
+> This half lives outside this repo, in `~/.claude/hooks/tmux-pending.sh`. Without it `prefix + m` is a no-op — the binding is guarded by `test -f` — and everything else works unchanged.
+
+---
+
 ## Tests
 
 ```bash

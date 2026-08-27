@@ -107,6 +107,24 @@ O script `scripts/session-theme.sh` é chamado pelos hooks `session-created`, `s
 
 ---
 
+## Indicador de pendência
+
+A aba de uma janela muda de cor sozinha enquanto um Claude Code naquela janela está esperando você, e dá pra marcar uma aba à mão pra voltar nela depois.
+
+| Cor da aba | Significado |
+|------------|-------------|
+| Normal | nada pendente |
+| **Violeta** | um Claude terminou, ou perguntou algo, e está esperando você |
+| **Verde** | você marcou essa aba com `prefix + m` |
+
+A marca manual tem precedência sobre a pendência e nunca a apaga: marcar uma aba violeta deixa ela verde, e desmarcar traz o violeta de volta se aquele Claude ainda estiver esperando. A pendência só sai quando você de fato responde — trocar de aba e ler não conta. A aba selecionada aparece num tom mais claro da cor que estiver valendo, em negrito.
+
+Abas coloridas vizinhas se conectam no estilo powerline: a cunha entre duas delas leva a cor da aba anterior, e uma sequência de abas da mesma cor é dividida por um separador fino, em vez de um triângulo invisível da mesma cor sobre ela mesma.
+
+> Essa metade mora fora deste repo, em `~/.claude/hooks/tmux-pending.sh`. Sem ele o `prefix + m` não faz nada — o binding é guardado por `test -f` — e todo o resto funciona normalmente.
+
+---
+
 ## Testes
 
 ```bash
