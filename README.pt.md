@@ -157,5 +157,4 @@ Para a navegação `C-h/j/k/l` funcionar dentro do Vim também, instale o plugin
 
 ## Projetos relacionados
 
-- **[albertosca/vim](https://github.com/albertosca/vim)** — minha config do Vim (complementa este setup: navegação tmux↔Vim, plugins, tema)
-- **[albertosca/vim-tutorial](https://github.com/albertosca/vim-tutorial)** — tutorial de Vim que uso como referência
+- **[albertosca/vim-runtime](https://github.com/albertosca/vim-runtime)** — minha config do Vim (complementa este setup: navegação tmux↔Vim, plugins, tema)
