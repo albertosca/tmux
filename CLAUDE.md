@@ -119,6 +119,7 @@ Para outros gerenciadores (vim-plug, lazy.nvim, etc.), adapte o caminho. O plugi
 - **`aggressive-resize on`** só afeta quando múltiplos clientes attach na mesma sessão. Geralmente um só client por sessão — option é idle mas gratuita.
 - **Continuum + Resurrect**: o auto-save a cada 15min salva em `~/.config/tmux/plugins/tmux-resurrect/resurrect/`. Se apagar isso, perde histórico de sessões. `@continuum-restore 'on'` faz restore automático no primeiro attach após boot — útil mas pode surpreender.
 - **Popup Claude/lazygit**: `-E` fecha popup quando o processo sai. Sem `-E`, o popup vira shell órfão.
+- **Abas roxa/verde vêm do indicador opcional `~/.claude/hooks/tmux-pending.sh`** (fora deste repo, atrás de `test -f`): ele sobrescreve `window-status-format` por janela e é chamado pelos hooks `window-linked`/`window-unlinked` deste conf. Se o hook existir na máquina, a suíte dele carrega este `tmux.conf` — mexeu em formato da barra ou nesses hooks, rode a suíte dele também.
 
 ## Padrões de edição
 
