@@ -202,6 +202,9 @@ test_pending_mark_guarded() {
   # em qualquer clone do repo público
   assert_grep "pending mark (prefix+m)" 'bind-key m run-shell.*tmux-pending.sh mark' "$CONF"
   assert_grep "pending mark tem guard test -f" 'bind-key m run-shell "test -f.*tmux-pending.sh &&' "$CONF"
+  # Aba roxa vista por 2s+ apaga ao sair: a troca de aba avisa o hook.
+  assert_grep "troca de aba avisa o pending (guarded)" "set-hook -g session-window-changed \"run-shell \\\\\"test -f ~/.claude/hooks/tmux-pending.sh && bash ~/.claude/hooks/tmux-pending.sh window-changed '#\\{session_id\\}' '#\\{window_id\\}'" "$CONF"
+  assert_grep "troca de sessão reinicia a contagem (guarded, índice 1)" "set-hook -g 'client-session-changed\\[1\\]' \"run-shell \\\\\"test -f ~/.claude/hooks/tmux-pending.sh && bash ~/.claude/hooks/tmux-pending.sh window-changed" "$CONF"
 }
 
 test_copy_mode_vi_bindings() {
