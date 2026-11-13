@@ -37,6 +37,7 @@ PUBLISHED=(
   .gitignore
   .github
   scripts
+  theme
   test
 )
 

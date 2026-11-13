@@ -333,17 +333,35 @@ test_current_format_global_is_neutral() {
   # tema pintava por window; agora o global carrega as três paletas atrás de
   # condicionais de formato resolvidas por #S no render, o que elimina o
   # flash entre criar a janela e o hook rodar (não há mais hook).
-  assert_grep "window-status-current-format global mantém o neutro (colour244)" 'window-status-current-format.*colour244' "$CONF"
+  # Gravel (2026-11-13): the neutral is the theme's surface, and inactive tabs
+  # are muted text on whatever bar the session has -- no per-session branch.
+  assert_grep "window-status-current-format global keeps a neutral (@gravel-surface)" 'window-status-current-format.*@gravel-surface' "$CONF"
   assert_grep "window-status-current-format global é condicional por sessão" 'window-status-current-format.*m:work\*' "$CONF"
-  assert_grep "window-status-format global também é condicional por sessão" 'window-status-format.*m:personal\*' "$CONF"
+  assert_grep "window-status-format global reads the theme's ink text (Alberto, 2026-11-13: muted was too thin)" 'window-status-format "#\[fg=#\{@gravel-ink\}\]' "$CONF"
 }
 
 test_session_theme_has_window_status_formats() {
   # As duas paletas continuam definidas — só mudaram de arquivo, do
   # session-theme.sh para o global do conf, quando a pintura por-window
   # passou a ser exclusividade do indicador de pendência (26/08/2026).
-  assert_grep "paleta de work (ciano) no current-format global" 'window-status-current-format.*colour51.*colour31|window-status-current-format.*colour31.*colour51' "$CONF"
-  assert_grep "paleta de personal (laranja) no current-format global" 'window-status-current-format.*colour172.*colour130|window-status-current-format.*colour130.*colour172' "$CONF"
+  assert_grep "work palette (bar + current) in the global current-format" 'window-status-current-format.*@gravel-work-bar.*@gravel-work-current' "$CONF"
+  assert_grep "personal palette (bar + current) in the global current-format" 'window-status-current-format.*@gravel-personal-bar.*@gravel-personal-current' "$CONF"
+}
+
+test_colors_come_from_the_gravel_theme() {
+  # One source for the palette: tmux.conf sources the generated theme and
+  # no line outside comments names a colour by number or by name.
+  assert_grep "tmux.conf sources the gravel theme of the current mode" '^source-file -F "\$HOME/.config/tmux/theme/gravel-#\{@gravel-mode\}.conf"' "$CONF"
+  assert_grep "tmux.conf sources the load-time styles" '^source-file ~/.config/tmux/theme/apply.conf' "$CONF"
+  local hand_written
+  for hand_written in apply.conf switch.sh; do
+    assert_not_grep "$hand_written types no hex color" '^[^#]*#[0-9a-fA-F]{6}' "$(dirname "$CONF")/theme/$hand_written"
+  done
+  assert_not_grep "no hard-coded colourNNN outside comments" '^[^#]*colour[0-9]' "$CONF"
+  assert_not_grep "no named colours in styles outside comments" '^[^#]*(fg|bg)=(black|white|red|green|yellow|blue|magenta|cyan)' "$CONF"
+  local theme
+  theme="$(dirname "$CONF")/theme/gravel-dark.conf"
+  assert_grep "the theme defines the waiting fill" '^set -g @gravel-waiting-bg "#[0-9a-f]{6}"' "$theme"
 }
 
 test_session_theme_reset_default_case() {
@@ -469,6 +487,7 @@ suite_shell() {
   test_window_status_format_no_hardcoded_bg
   test_current_format_global_is_neutral
   test_session_theme_has_window_status_formats
+  test_colors_come_from_the_gravel_theme
   test_session_theme_reset_default_case
   # Sanity ranges
   test_status_interval_in_range

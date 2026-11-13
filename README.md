@@ -51,6 +51,11 @@ On the first launch `tmux.conf` notices TPM is missing and clones plus installs 
 ├── scripts/
 │   ├── session-theme.sh  # per-session status bar colors (work/personal)
 │   └── sync-public.sh    # publishes this config to the public mirror
+├── theme/
+│   ├── gravel-dark.conf  # generated gravel colors, dark mode
+│   ├── gravel-light.conf # generated gravel colors, light mode
+│   ├── apply.conf        # styles built from those colors
+│   └── switch.sh         # switches a running server between dark and light
 ├── test/
 │   ├── run.sh          # test entry point
 │   ├── shell.sh        # static checks against the conf
@@ -97,13 +102,25 @@ Load order matters: `tmux-sensible` sets `status-keys emacs` unconditionally whe
 
 The status bar and the pane borders change color based on the session name:
 
-| Name prefix | Color  |
-|-------------|--------|
-| `work`      | Cyan   |
-| `personal`  | Orange |
-| anything else | Default (black) |
+| Name prefix | Bar color (dark / light) |
+|-------------|--------------------------|
+| `work`      | cyan tint `#182b33` / `#dcedf4` |
+| `personal`  | orange tint `#35271b` / `#f8e6d5` |
+| anything else | the theme ground `#1d2021` / `#fbf1c7` |
 
 `scripts/session-theme.sh` is driven by the `session-created`, `session-renamed` and `client-session-changed` hooks.
+
+---
+
+## Colors (gravel)
+
+All colors come from **gravel**, a theme family whose rules come from Nikita Prokopov's (tonsky) [article on syntax highlighting](https://tonsky.me/blog/syntax-highlighting/) and his [Alabaster](https://github.com/tonsky/sublime-scheme-alabaster) theme, with hues from [gruvbox-material](https://github.com/sainnhe/gruvbox-material) by sainnhe (both MIT). The Vim and Neovim side, with the full credits, lives in [vim-runtime/plugins/gravel](https://github.com/albertosca/vim-runtime/tree/main/plugins/gravel).
+
+Text is ink or grey on a quiet ground; color only asks for attention. The files in `theme/` are generated from a single palette (kept privately) and should not be edited by hand. Dark is the default; to switch a running server:
+
+```bash
+bash ~/.config/tmux/theme/switch.sh light   # or dark
+```
 
 ---
 

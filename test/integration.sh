@@ -71,10 +71,10 @@ test_pane_native_arch() {
   # 150 × 0.1s = 15s. O shell do pane carrega o .zshrc inteiro antes de rodar
   # o comando; com a máquina sob carga (suites em paralelo) os 5s originais
   # estouravam e a medição saía vazia.
-  local i=0
-  while [[ $i -lt 150 ]] && ! grep -q "done" "$out" 2>/dev/null; do
+  local poll_attempt=0
+  while [[ $poll_attempt -lt 150 ]] && ! grep -q "done" "$out" 2>/dev/null; do
     sleep 0.1
-    i=$((i + 1))
+    poll_attempt=$((poll_attempt + 1))
   done
   local measured=0
   grep -q "done" "$out" 2>/dev/null && measured=1
@@ -153,12 +153,12 @@ test_opt_status_keys() {
 
 test_opt_escape_time_low() {
   # tmux-sensible seta escape-time=0. Se o user mexeu, pelo menos < 50ms.
-  local v
-  v=$(gopt escape-time)
-  if [[ "$v" -lt 50 ]] 2>/dev/null; then
-    ok "escape-time baixo (${v}ms)"
+  local escape_time_milliseconds
+  escape_time_milliseconds=$(gopt escape-time)
+  if [[ "$escape_time_milliseconds" -lt 50 ]] 2>/dev/null; then
+    ok "escape-time baixo (${escape_time_milliseconds}ms)"
   else
-    fail "escape-time alto: ${v}ms" "deve ser 0 (tmux-sensible) ou muito baixo"
+    fail "escape-time alto: ${escape_time_milliseconds}ms" "deve ser 0 (tmux-sensible) ou muito baixo"
   fi
 }
 
@@ -181,6 +181,28 @@ test_var_extrakto_key() {
 
 test_var_extrakto_clip() {
   assert_eq "@extrakto_clip_tool = pbcopy" "$(gopt @extrakto_clip_tool)" "pbcopy"
+}
+
+# Fora do macOS o pbcopy não existe, então fixar a opção nele faz o extrakto
+# falhar ao copiar. Um uname falso na frente do PATH faz o conf achar que está
+# no Linux; "auto" deixa o plugin escolher wl-copy ou xclip (lido no código dele).
+test_var_extrakto_clip_not_pinned_on_linux() {
+  local fake_bin socket value tmpdir
+  fake_bin=$(mktemp -d)
+  printf '#!/bin/sh\necho Linux\n' > "$fake_bin/uname"
+  chmod +x "$fake_bin/uname"
+  socket="claude-test-linux-$$"
+  if ! PATH="$fake_bin:$PATH" tmux -L "$socket" -f "$CONF" new-session -d -s linuxcheck 2>/dev/null; then
+    fail "linux: servidor de teste não subiu com uname falso"
+    rm -rf "$fake_bin"
+    return
+  fi
+  value=$(tmux -L "$socket" show-option -gv @extrakto_clip_tool 2>/dev/null)
+  tmux -L "$socket" kill-server 2>/dev/null || true
+  tmpdir="${TMUX_TMPDIR:-/tmp/tmux-$(id -u)}"
+  rm -f "$tmpdir/$socket"
+  rm -rf "$fake_bin"
+  assert_eq "linux: @extrakto_clip_tool = auto (não fixado em pbcopy)" "$value" "auto"
 }
 
 # ── Bindings (list-keys) ────────────────────────────────────────────────────
@@ -212,6 +234,68 @@ test_hooks_session_theme() {
   else
     fail "hooks de session-theme ausentes" "esperado em show-hooks -g"
   fi
+}
+
+# Runs a script as if from inside the isolated server: TMUX points the plain
+# `tmux` calls in it at that socket, and stderr comes back (run-shell on a
+# server without a client swallows it).
+run_on_socket() {
+  local socket=$1; shift
+  local socket_path
+  socket_path=$(tmux -L "$socket" display-message -p '#{socket_path}' 2>/dev/null)
+  TMUX="$socket_path,0,0" "$@" 2>&1
+}
+
+# gravel value of one option in a generated theme file (dark or light).
+theme_value() {
+  sed -n "s/^set -g @gravel-$2 \"\\(#[0-9a-f]*\\)\"$/\\1/p" "$(dirname "$CONF")/theme/gravel-$1.conf"
+}
+
+test_theme_switch_repaints_bar_and_sessions() {
+  # Review 2026-11-13: sourcing gravel-light.conf by hand left the -gF styles
+  # and the per-session bars dark. switch.sh must repaint all of them.
+  local socket="claude-switch-$$" script light_ground light_faint light_work
+  script="$(dirname "$CONF")/theme/switch.sh"
+  light_ground=$(theme_value light ground)
+  light_faint=$(theme_value light faint)
+  light_work=$(theme_value light work-bar)
+  if ! tmux -L "$socket" -f "$CONF" new-session -d -s work1 2>/dev/null; then
+    fail "switch: server did not start" "$CONF"
+    return 1
+  fi
+  run_on_socket "$socket" bash "$script" light >/dev/null
+  assert_eq "switch: mode option is light" "light" "$(tmux -L "$socket" show -gv @gravel-mode 2>/dev/null)"
+  assert_match "switch: status bar takes the light ground" "$(tmux -L "$socket" show -gv status-style 2>/dev/null)" "bg=$light_ground"
+  assert_match "switch: pane border takes the light faint" "$(tmux -L "$socket" show -gv pane-border-style 2>/dev/null)" "fg=$light_faint"
+  assert_eq "switch: clock mode takes the light muted" "$(theme_value light muted)" "$(tmux -L "$socket" show -gwv clock-mode-colour 2>/dev/null)"
+  assert_eq "switch: work session bar is repainted" "$light_work" "$(tmux -L "$socket" show -v -t work1 status-bg 2>/dev/null)"
+  run_on_socket "$socket" bash "$script" dark >/dev/null
+  assert_eq "switch: back to dark" "$(theme_value dark work-bar)" "$(tmux -L "$socket" show -v -t work1 status-bg 2>/dev/null)"
+  tmux -L "$socket" kill-server 2>/dev/null || true
+}
+
+test_fresh_server_loads_the_dark_theme() {
+  # 2026-11-13: `source-file -F '~/...'` failed silently and a fresh server
+  # came up with no @gravel-* options and tmux's default bar.
+  local socket="claude-fresh-$$"
+  tmux -L "$socket" -f "$CONF" new-session -d -s fresh 2>/dev/null
+  assert_eq "fresh server: theme loaded" "$(theme_value dark ink)" "$(tmux -L "$socket" show -gv @gravel-ink 2>/dev/null)"
+  assert_match "fresh server: status bar on the theme ground" "$(tmux -L "$socket" show -gv status-style 2>/dev/null)" "bg=$(theme_value dark ground)"
+  tmux -L "$socket" kill-server 2>/dev/null || true
+}
+
+test_session_theme_without_a_sourced_theme() {
+  # Review 2026-11-13: on a server that never sourced the theme, session-theme
+  # printed "bad colour" and painted nothing. It now loads the theme itself.
+  local socket="claude-bare-$$" script
+  script="$(dirname "$CONF")/scripts/session-theme.sh"
+  tmux -L "$socket" -f /dev/null new-session -d -s work1 2>/dev/null
+  local output
+  output=$(run_on_socket "$socket" bash "$script" work1)
+  assert_not_match "bare server: no bad colour" "$output" "bad colour"
+  assert_not_match "bare server: no invalid style" "$output" "invalid style"
+  assert_eq "bare server: work bar painted from the theme file" "$(theme_value dark work-bar)" "$(tmux -L "$socket" show -v -t work1 status-bg 2>/dev/null)"
+  tmux -L "$socket" kill-server 2>/dev/null || true
 }
 
 test_bind_split_pipe() {
@@ -536,9 +620,13 @@ suite_integration() {
   test_var_sessionx_bind
   test_var_extrakto_key
   test_var_extrakto_clip
+  test_var_extrakto_clip_not_pinned_on_linux
 
   # Hooks
   test_hooks_session_theme
+  test_fresh_server_loads_the_dark_theme
+  test_theme_switch_repaints_bar_and_sessions
+  test_session_theme_without_a_sourced_theme
 
   # Bindings custom
   test_bind_swap_window_left_repeatable

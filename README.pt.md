@@ -51,6 +51,11 @@ Na primeira inicialização, o `tmux.conf` detecta que o TPM não existe e clona
 ├── scripts/
 │   ├── session-theme.sh  # cores da status bar por sessão (work/personal)
 │   └── sync-public.sh    # publica esta config no espelho público
+├── theme/
+│   ├── gravel-dark.conf  # cores do gravel geradas, modo escuro
+│   ├── gravel-light.conf # cores do gravel geradas, modo claro
+│   ├── apply.conf        # estilos montados a partir dessas cores
+│   └── switch.sh         # troca um servidor rodando entre escuro e claro
 ├── test/
 │   ├── run.sh          # entry point dos testes
 │   ├── shell.sh        # checagens estáticas no conf
@@ -97,13 +102,25 @@ A ordem de carga importa: o `tmux-sensible` seta `status-keys emacs` incondicion
 
 A status bar e as bordas mudam de cor automaticamente pelo nome da sessão:
 
-| Prefixo do nome | Cor    |
-|-----------------|--------|
-| `work`          | Ciano  |
-| `personal`      | Laranja |
-| qualquer outro  | Padrão (preto) |
+| Prefixo do nome | Cor da barra (escuro / claro) |
+|-----------------|--------------------------------|
+| `work`          | tom de ciano `#182b33` / `#dcedf4` |
+| `personal`      | tom de laranja `#35271b` / `#f8e6d5` |
+| qualquer outro  | o fundo do tema `#1d2021` / `#fbf1c7` |
 
 O script `scripts/session-theme.sh` é chamado pelos hooks `session-created`, `session-renamed` e `client-session-changed`.
+
+---
+
+## Cores (gravel)
+
+Todas as cores vêm do **gravel**, uma família de temas com as regras do [artigo sobre syntax highlighting](https://tonsky.me/blog/syntax-highlighting/) de Nikita Prokopov (tonsky) e do tema dele, o [Alabaster](https://github.com/tonsky/sublime-scheme-alabaster), e as cores do [gruvbox-material](https://github.com/sainnhe/gruvbox-material) de sainnhe (os dois MIT). O lado Vim e Neovim, com os créditos completos, fica em [vim-runtime/plugins/gravel](https://github.com/albertosca/vim-runtime/blob/main/plugins/gravel/README.pt.md).
+
+O texto é tinta ou cinza sobre um fundo quieto; a cor só aparece para pedir atenção. Os arquivos de `theme/` são gerados a partir de uma paleta única (guardada no privado) e não se editam à mão. O escuro é o padrão; para trocar um servidor rodando:
+
+```bash
+bash ~/.config/tmux/theme/switch.sh light   # ou dark
+```
 
 ---
 
